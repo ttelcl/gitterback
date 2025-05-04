@@ -5,20 +5,47 @@
 open System
 open System.IO
 
+open GitterbackLib.GitThings
+
 open RunGit
 open ColorPrint
 
 let run args =
   let result =
-    runGit [| "log" |] None
-    //runGit [| "remote"; "-v" |] None
+    //runGit [| "log" |] None
+    runGit [| "remote"; "-v" |] None
 
-  match result with
-  | Success lines ->
-    cp $"\fgReceived these \fb{lines.Count}\fg lines\f0:"
-    for line in lines do
-      cp $"\fG[\f0{line}\fG]\f0"
-    0
-  | Failure ex ->
-    cp $"\frError: \fy{ex.Message}\f0."
-    1
+  let status =
+    match result with
+    | SuccessStatus (lines, status) ->
+      let color = if status = 0 then "\fg" else "\fr"
+      cp $"\fyReceived these \fb{lines.Count}\fy lines, with status {color}{status}\f0:"
+      for line in lines do
+        cp $"\fR[\f0{line}\fR]\f0"
+      1
+    | SuccessClean lines ->
+      cp $"Received these \fb{lines.Count}\f0 lines (status \fgOK\f0):"
+      for line in lines do
+        cp $"\fG[\f0{line}\fG]\f0"
+      0
+    | Failure ex ->
+      cp $"\frError: \fy{ex.Message}\f0."
+      1
+  if status <> 0 then
+    status
+  else
+    cp "Now via a different way"
+    let remotes, status =
+      GitRunner.GetRemotes(null)
+    if status = 0 then
+      cp "Received these remotes:"
+      for kvp in remotes.Remotes do
+        let remote = kvp.Value
+        cp $"\fg{remote.Name}\f0:"
+        for target in remote.Targets do
+          cp $"\fb{target.Mode,8}\f0  {target.Target}\f0"
+      0
+    else
+      cp $"\frError: \fy{status}\f0."
+      status
+    
