@@ -10,7 +10,8 @@ open ColorPrint
 
 let run args =
   let result =
-    runGit [| "remote"; "-v" |] None
+    runGit [| "log" |] None
+    //runGit [| "remote"; "-v" |] None
 
   match result with
   | Success lines ->

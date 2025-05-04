@@ -21,6 +21,7 @@ namespace GitterbackLib.Configuration;
 public class SettingsStore
 {
   private GitterbackSettings? _settings;
+  private Dictionary<string, Anchor> _anchors;
 
   /// <summary>
   /// Create a new SettingsStore, creating the folder and
@@ -29,12 +30,19 @@ public class SettingsStore
   public SettingsStore(
     string? folder = null)
   {
+    _anchors = new Dictionary<string, Anchor>(
+      StringComparer.OrdinalIgnoreCase);
     Folder = Path.GetFullPath(folder ?? DefaultFolder);
     if(!Directory.Exists(Folder))
     {
       Directory.CreateDirectory(Folder);
     }
-    GetSettings(); // Create the settings if they do not exist
+    var settings = GetSettings(); // Create the settings if they do not exist
+    foreach(var kvp in settings.Anchors)
+    {
+      var anchor = new Anchor(this, kvp.Key, kvp.Value);
+      _anchors.Add(anchor.AnchorName, anchor);
+    }
   }
 
   /// <summary>
@@ -154,4 +162,62 @@ public class SettingsStore
     File.WriteAllText(settingsFile, json);
   }
 
+  /// <summary>
+  /// Add a new anchor to the settings. The anchor name must
+  /// meet the requirements of <see cref="IsValidAnchorName(string?)"/>.
+  /// </summary>
+  /// <param name="anchorName">
+  /// The name of the anchor. Must be valid and must not exist yet.
+  /// </param>
+  /// <param name="anchorFolder">
+  /// The folder to use as anchor. This folder will be created if it
+  /// does not exist yet.
+  /// </param>
+  public Anchor AddAnchor(
+    string anchorName,
+    string anchorFolder)
+  {
+    if(!IsValidAnchorName(anchorName))
+    {
+      throw new ArgumentException(
+        $"Invalid anchor name '{anchorName}'.");
+    }
+    anchorFolder = Path.GetFullPath(anchorFolder);
+    var settings = GetSettings();
+    if(settings.Anchors.ContainsKey(anchorName))
+    {
+      throw new ArgumentException(
+        $"Anchor '{anchorName}' already exists.");
+    }
+    // assume the caller has checked against duplicate targets
+    if(!Directory.Exists(anchorFolder))
+    {
+      Directory.CreateDirectory(anchorFolder);
+    }
+    var lastChar = anchorFolder[^1];
+    if(lastChar == Path.DirectorySeparatorChar ||
+       lastChar == Path.AltDirectorySeparatorChar)
+    {
+      throw new ArgumentException(
+        $"Anchor folder '{anchorFolder}' must not end with a separator.");
+    }
+    var ainf = new AnchorInfo(anchorFolder);
+    var anchor = new Anchor(this, anchorName, ainf);
+    settings.Anchors.Add(
+      anchorName,
+      ainf);
+    _anchors.Add(anchorName, anchor);
+    MarkAsDirty();
+    SaveIfDirty();
+    anchor.InitTag();
+    return anchor;
+  }
+
+  /// <summary>
+  /// Find an anchor by name. The name is case insensitive.
+  /// </summary>
+  public Anchor? FindAnchor(string anchorName)
+  {
+    return _anchors.TryGetValue(anchorName, out var anchor) ? anchor : null;
+  }
 }

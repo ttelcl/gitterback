@@ -9,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using GitterbackLib.Utilities;
+
 using Newtonsoft.Json;
 
 namespace GitterbackLib.Configuration;
@@ -57,4 +59,36 @@ public class GitterbackSettings
   [JsonProperty("anchors")]
   public Dictionary<string, AnchorInfo> Anchors { get; }
 
+  /// <summary>
+  /// Return a list of anchors that point to the same physical folder
+  /// on disk as the argument.
+  /// </summary>
+  public IEnumerable<KeyValuePair<string, AnchorInfo>> FindSameFolders(
+    string folder)
+  {
+    var fid = FileIdentifier.FromPath(folder);
+    if(fid != null) // folder exists and is accessible
+    {
+      foreach(var kvp in FindSameFolders(fid))
+      {
+        yield return kvp;
+      }
+    }
+  }
+
+  /// <summary>
+  /// Return a list of anchors that point to the same physical folder
+  /// on disk as the argument.
+  /// </summary>
+  public IEnumerable<KeyValuePair<string, AnchorInfo>> FindSameFolders(
+    FileIdentifier folderId)
+  {
+    foreach(var kvp in Anchors)
+    {
+      if(folderId.SameAs(kvp.Value.AnchorFolder))
+      {
+        yield return kvp;
+      }
+    }
+  }
 }

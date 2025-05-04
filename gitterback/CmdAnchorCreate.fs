@@ -4,6 +4,7 @@ open System
 open System.IO
 
 open GitterbackLib.Configuration
+open GitterbackLib.Utilities
 
 open ColorPrint
 open CommonTools
@@ -29,18 +30,42 @@ let run args =
       cp "Expecting a sequence of one or more identifiers, separated by '-', '.' or '_'"
       None
     elif o.AnchorName |> anchors.ContainsKey then
-      cp $"\frError: \foAnchor name '\fy{o.AnchorName}\fo' already exists\f0."
+      let ainf = anchors.[o.AnchorName]
+      cp $"\frError: \foAnchor name '\fy{o.AnchorName}\fo' already exists\f0 ({ainf.AnchorFolder})"
       None
     elif String.IsNullOrWhiteSpace(o.AnchorFolder) then
       cp "\frNo anchor folder given\f0."
       None
     else
-      let o =
-        if o.AnchorFolder = "." then
-          { o with AnchorFolder = Environment.CurrentDirectory }
+      let anchorFolder = o.AnchorFolder
+      let anchorFolder =
+        if anchorFolder = "." then
+          Environment.CurrentDirectory
         else
-          { o with AnchorFolder = Path.GetFullPath(o.AnchorFolder) }
-      Some(o)
+          Path.GetFullPath(o.AnchorFolder)
+      let anchorFolder =
+        anchorFolder.TrimEnd(
+          Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)   
+      let o = { o with AnchorFolder = anchorFolder }
+      if Directory.Exists(o.AnchorFolder) |> not then
+        cp $"\frError: \foAnchor folder '\fy{o.AnchorFolder}\fo' does not exist\f0."
+        None
+      else
+        let fid = o.AnchorFolder |> FileIdentifier.FromPath
+        if fid = null then
+          cp $"\frError: \foAnchor folder '\fy{o.AnchorFolder}\fo' is not accessible\f0."
+          None
+        else
+          let duplicates =
+            settings.FindSameFolders(fid)
+            |> Seq.toArray
+          if duplicates.Length > 0 then
+            cp $"\frError: \foAnchor folder '\fy{o.AnchorFolder}\fo' is already used by these anchors\f0:"
+            for d in duplicates do
+              cp $"\fy{d.Key,-15}\f0 ({d.Value.AnchorFolder})"
+            None
+          else
+            Some(o)
   
   let rec parseMore o args =
     match args with
@@ -64,7 +89,12 @@ let run args =
     AnchorName = null;
     AnchorFolder = null
   }
-  
-  cp "\frNot yet implemented\f0."
-  Usage.usage "anchor-create"
-  1
+
+  match oo with
+  | None ->
+    Usage.usage "anchor-create"
+    1
+  | Some o ->
+    cp $"Adding anchor \fy{o.AnchorName}\f0 = \fg{o.AnchorFolder}\f0."
+    let anchor = store.AddAnchor(o.AnchorName, o.AnchorFolder)
+    0
