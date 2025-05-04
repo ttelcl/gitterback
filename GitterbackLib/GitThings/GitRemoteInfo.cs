@@ -53,7 +53,7 @@ public class GitRemoteInfo
     }
     else
     {
-      var newTarget = new GitRemoteTarget(mode, target);
+      var newTarget = new GitRemoteTarget(Name, mode, target);
       _targets.Add(newTarget);
       return newTarget;
     }

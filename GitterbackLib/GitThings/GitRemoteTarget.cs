@@ -20,12 +20,19 @@ public class GitRemoteTarget
   /// Create a new GitRemoteTarget
   /// </summary>
   public GitRemoteTarget(
+    string remoteName,
     string mode,
     string target)
   {
+    RemoteName = remoteName;
     Mode = mode;
     Target = target;
   }
+
+  /// <summary>
+  /// The name of the remote (e.g. "origin").
+  /// </summary>
+  public string RemoteName { get; }
 
   /// <summary>
   /// The access mode for the remote target

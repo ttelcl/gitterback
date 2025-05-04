@@ -10,6 +10,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using GitterbackLib.GitThings;
+using GitterbackLib.Utilities;
+
 using Newtonsoft.Json;
 
 namespace GitterbackLib.Configuration;
@@ -219,5 +222,86 @@ public class SettingsStore
   public Anchor? FindAnchor(string anchorName)
   {
     return _anchors.TryGetValue(anchorName, out var anchor) ? anchor : null;
+  }
+
+  /// <summary>
+  /// Calculate the mappings for the repository containing the
+  /// witness folder.
+  /// </summary>
+  /// <param name="witnessFolder">
+  /// Any folder inside the repository. If null, the current
+  /// working directory is used.
+  /// </param>
+  /// <param name="mode">
+  /// The mode (fetch or push) to select the mappings for. If null,
+  /// all modes are included.
+  /// </param>
+  /// <returns></returns>
+  public IEnumerable<RemoteMapping> GetMappingsForRepo(
+    string? witnessFolder = null,
+    string? mode = null)
+  {
+    var repoRoot = GitRepoFolder.LocateRepoRootFrom(
+      witnessFolder ?? Environment.CurrentDirectory);
+    if(repoRoot == null)
+    {
+      yield break;
+    }
+    var remotes = GitRunner.GetRemotes(repoRoot.Folder, out var result);
+    if(remotes == null)
+    {
+      yield break;
+    }
+    foreach(var remote in remotes.Remotes.Values)
+    {
+      foreach(var grt in remote.Targets)
+      {
+        if(mode != null && grt.Mode != mode)
+        {
+          continue;
+        }
+        var target = grt.Target;
+        if(target.Length < 5 || target[1] != ':')
+        {
+          // not a windows filesystem path
+          continue;
+        }
+        if(!Directory.Exists(target))
+        {
+          // not a valid target
+          continue;
+        }
+        var anchorPart = Path.GetDirectoryName(target);
+        if(anchorPart == null)
+        {
+          // not a valid target
+          continue;
+        }
+        var bareRepoName = Path.GetFileName(target);
+        if(bareRepoName == null)
+        {
+          // not a valid target
+          continue;
+        }
+        var anchorId = FileIdentifier.FromPath(anchorPart);
+        if(anchorId == null)
+        {
+          // not a valid target
+          continue;
+        }
+        var settings = GetSettings();
+        foreach(var kvp in settings.FindSameFolders(anchorId))
+        {
+          // TODO: missing FindSameFolder but for Anchors instead of AnchorInfo
+          throw new NotImplementedException(
+            "GetMappingsForRepo not implemented yet.");
+        }
+      }
+      //
+    }
+
+    //
+    throw new NotImplementedException(
+      "GetMappingsForRepo not implemented yet.");
   }
 }
