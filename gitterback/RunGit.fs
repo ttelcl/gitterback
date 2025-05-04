@@ -5,9 +5,11 @@ open System.IO
 
 open GitterbackLib.GitThings
 
+open ColorPrint
+
 type Result<'a> =
     | SuccessClean of 'a
-    | SuccessStatus of 'a * int
+    | SuccessStatus of 'a * 'a * int
     | Failure of Exception
 
 let runGit args workDir =
@@ -23,13 +25,18 @@ let runGit args workDir =
     args
     |> Seq.toArray
   try
-    let lines, status = GitRunner.RunToLines(args, workingDirectory)
-    if status = 0 then
-      SuccessClean lines
+    let result = GitRunner.RunToLines(args, workingDirectory)
+    if result.StatusCode = 0 then
+      SuccessClean result.OutputLines
     else
-      SuccessStatus (lines, status)
+      SuccessStatus (result.OutputLines, result.ErrorLines, result.StatusCode)
   with
   | ex ->
     Failure ex
-  
-    
+
+let printCommandLine (result: GitRunResult) =
+  cpx "\fb> \fo\vBgit\f0"
+  for arg in result.Arguments do
+    cpx $" \fw\vB{arg}\f0"
+  cp "\f0"
+

@@ -65,9 +65,9 @@ let run args =
             cp $"\foRemote name '\fy{repoName}\fo' is not valid\f0."
             None
           else
-            let remotes, status = GitRunner.GetRemotes(root.Folder)
-            if status <> 0 || remotes = null then
-              cp $"\frError: \foCannot read remotes from git repository\f0 Status \fr{status}\f0."
+            let remotes, result = GitRunner.GetRemotes(root.Folder)
+            if result.StatusCode <> 0 || remotes = null then
+              cp $"\frError: \foCannot read remotes from git repository\f0 Status \fr{result.StatusCode}\f0."
               None
             else
               let existing = remotes[remoteName]
@@ -120,9 +120,26 @@ let run args =
       cp $"\fgCreating backup for git repository at \fy{root.Folder}\f0."
       cp $"\fgUsing anchor \fy{o.AnchorName}\f0."
       cp $"\fgUsing backup repo name \fy{o.RepoName}\f0."
-      cp $"   -> \fc{o.TargetFolder}\f0."
       cp $"\fgUsing remote name \fy{o.RemoteName}\f0."
 
-      cp "\frNot yet implemented\f0."
-      Usage.usage "setup"
-      1
+      cp $"Creating bare repository \fg{o.TargetFolder}\f0."
+      let result = GitRunner.CreateBareRepository(o.TargetFolder)
+      result |> RunGit.printCommandLine
+      if result.StatusCode <> 0 then
+        cp $"\frError: \foCannot create bare repository at \fy{o.TargetFolder}\f0:"
+        for line in result.ErrorLines do
+          cp $"  \fy{line}\f0"
+        1
+      else
+        cp $"Adding remote '\fc{o.RemoteName}\f0'"
+        let result = GitRunner.AddRemote(
+          o.Root.Folder, o.RemoteName, o.TargetFolder)
+        result |> RunGit.printCommandLine
+        if result.StatusCode <> 0 then
+          cp $"\frError: \foFailed to add remote\f0:"
+          for line in result.ErrorLines do
+            cp $"  \fy{line}\f0"
+          1
+        else
+          // Done??
+          0

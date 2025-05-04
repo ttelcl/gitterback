@@ -25,49 +25,53 @@ public static class GitRunner
   /// <param name="workingDirectory">
   /// Working directory (default: current directory).
   /// </param>
-  /// <param name="status">
-  /// The exit status of the command.
-  /// </param>
   /// <param name="command">
   /// The command to run (default: "git").
   /// </param>
   /// <returns></returns>
-  public static List<string> RunToLines(
+  public static GitRunResult RunToLines(
     IEnumerable<string> args,
     string? workingDirectory,
-    out int status,
     string command = "git")
   {
     var startInfo = new ProcessStartInfo {
       FileName = command,
       RedirectStandardOutput = true,
-      //RedirectStandardError = true,
+      RedirectStandardError = true,
       UseShellExecute = false,
       CreateNoWindow = true,
       WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
     };
+    var result = new GitRunResult();
     foreach(var arg in args)
     {
       startInfo.ArgumentList.Add(arg);
+      result.Arguments.Add(arg);
     }
-    var outputLines = new List<string>();
     using(var process = new Process { StartInfo = startInfo })
     {
       process.OutputDataReceived += (sender, e) => {
         if(e.Data != null)
         {
-          outputLines.Add(e.Data);
+          result.OutputLines.Add(e.Data);
+        }
+      };
+      process.ErrorDataReceived += (sender, e) => {
+        if(e.Data != null)
+        {
+          result.ErrorLines.Add(e.Data);
         }
       };
       process.Start();
       process.BeginOutputReadLine();
+      process.BeginErrorReadLine();
       process.WaitForExit();
       // The process is closed next, which may cause extra lines
       // to be flushed. Only after that we can be sure that all
       // output has been received.
-      status = process.ExitCode;
+      result.StatusCode = process.ExitCode;
     }
-    return outputLines;
+    return result;
   }
 
   /// <summary>
@@ -87,16 +91,47 @@ public static class GitRunner
   /// </returns>
   public static GitRemotes? GetRemotes(
     string? workingDirectory,
-    out int status)
+    out GitRunResult status)
   {
-    var lines = RunToLines(
+    status = RunToLines(
       ["remote", "-v"],
-      workingDirectory,
-      out status);
-    if(status != 0)
+      workingDirectory);
+    if(status.StatusCode != 0)
     {
       return null;
     }
-    return GitRemotes.FromLines(lines);
+    return GitRemotes.FromLines(status.OutputLines);
+  }
+
+  /// <summary>
+  /// Create a new bare repository in the specified folder.
+  /// </summary>
+  public static GitRunResult CreateBareRepository(string folder)
+  {
+    var args = new List<string> {
+      "init",
+      "--bare",
+      folder
+    };
+    var result = RunToLines(args, null);
+    return result;
+  }
+
+  /// <summary>
+  /// Add a remote to the current repository.
+  /// </summary>
+  public static GitRunResult AddRemote(
+    string workingDirectory,
+    string remoteName,
+    string remoteTarget)
+  {
+    var args = new List<string> {
+      "remote",
+      "add",
+      remoteName,
+      remoteTarget
+    };
+    var result = RunToLines(args, workingDirectory);
+    return result;
   }
 }

@@ -17,11 +17,14 @@ let run args =
 
   let status =
     match result with
-    | SuccessStatus (lines, status) ->
+    | SuccessStatus (lines, errors, status) ->
       let color = if status = 0 then "\fg" else "\fr"
       cp $"\fyReceived these \fb{lines.Count}\fy lines, with status {color}{status}\f0:"
       for line in lines do
         cp $"\fR[\f0{line}\fR]\f0"
+      cp $"\frReceived these \fb{errors.Count}\fr error lines\f0:"
+      for line in errors do
+        cp $"\fR[\fy{line}\fR]\f0"
       1
     | SuccessClean lines ->
       cp $"Received these \fb{lines.Count}\f0 lines (status \fgOK\f0):"
@@ -35,9 +38,9 @@ let run args =
     status
   else
     cp "Now via a different way"
-    let remotes, status =
+    let remotes, result =
       GitRunner.GetRemotes(null)
-    if status = 0 then
+    if result.StatusCode = 0 then
       cp "Received these remotes:"
       for kvp in remotes.Remotes do
         let remote = kvp.Value
@@ -47,5 +50,9 @@ let run args =
       0
     else
       cp $"\frError: \fy{status}\f0."
+      if result.ErrorLines.Count > 0 then
+        cp $"\foError lines\f0:"
+        for line in result.ErrorLines do
+          cp $"  \fy{line}\f0 "
       status
     
