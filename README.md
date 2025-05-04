@@ -1,2 +1,2 @@
 # gitterback
-Tool for managing local git bare repositories acting as backups
+A tool for managing local git bare repositories, using them as backups.
