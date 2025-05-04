@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
@@ -118,6 +119,30 @@ public class SettingsStore
       return true;
     }
     return false;
+  }
+
+  /// <summary>
+  /// Check if the given anchor name is deemed valid.
+  /// Valid names are a sequence of one ore more identifier-like
+  /// segments, separated by '-', '_', or '.'.
+  /// </summary>
+  public static bool IsValidAnchorName(string? anchorName)
+  {
+    if(String.IsNullOrEmpty(anchorName))
+    {
+      return false;
+    }
+    if(anchorName.Length > 30 || anchorName.Length < 3)
+    {
+      return false;
+    }
+    if(!Regex.IsMatch(
+      anchorName,
+      @"^[a-zA-Z][a-zA-Z0-9]*([-_.][a-zA-Z0-9]+)*$"))
+    {
+      return false;
+    }
+    return true;
   }
 
   private void SaveSettings()

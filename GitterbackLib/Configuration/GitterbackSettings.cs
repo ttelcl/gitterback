@@ -29,11 +29,14 @@ public class GitterbackSettings
     Version = version;
     if(anchors == null)
     {
-      Anchors = new Dictionary<string, AnchorInfo>();
+      Anchors = new Dictionary<string, AnchorInfo>(
+        StringComparer.OrdinalIgnoreCase);
     }
     else
     {
-      Anchors = new Dictionary<string, AnchorInfo>(anchors);
+      Anchors = new Dictionary<string, AnchorInfo>(
+        anchors,
+        StringComparer.OrdinalIgnoreCase);
     }
   }
 
@@ -49,7 +52,7 @@ public class GitterbackSettings
   public int Version { get; }
 
   /// <summary>
-  /// The anchors for the repositories.
+  /// The anchors for the repositories. The key names are case insensitive.
   /// </summary>
   [JsonProperty("anchors")]
   public Dictionary<string, AnchorInfo> Anchors { get; }
