@@ -225,6 +225,20 @@ public class SettingsStore
   }
 
   /// <summary>
+  /// A mapping from anchor names to the anchor objects.
+  /// </summary>
+  public IReadOnlyDictionary<string, Anchor> AnchorMap {
+    get => _anchors;
+  }
+
+  /// <summary>
+  /// The collection of anchors
+  /// </summary>
+  public IReadOnlyCollection<Anchor> Anchors {
+    get => _anchors.Values;
+  }
+
+  /// <summary>
   /// Calculate the mappings for the repository containing the
   /// witness folder.
   /// </summary>
@@ -290,18 +304,53 @@ public class SettingsStore
           continue;
         }
         var settings = GetSettings();
-        foreach(var kvp in settings.FindSameFolders(anchorId))
+        foreach(var anchor in FindSameFolderAnchors(anchorId))
         {
-          // TODO: missing FindSameFolder but for Anchors instead of AnchorInfo
-          throw new NotImplementedException(
-            "GetMappingsForRepo not implemented yet.");
+          var mapping = new RemoteMapping(
+            repoRoot.Folder,
+            anchor,
+            grt);
+          yield return mapping;
         }
       }
-      //
     }
-
-    //
-    throw new NotImplementedException(
-      "GetMappingsForRepo not implemented yet.");
   }
+
+  /// <summary>
+  /// Return a list of anchors that point to the same physical folder
+  /// on disk as the argument.
+  /// </summary>
+  public IEnumerable<Anchor> FindSameFolderAnchors(
+    FileIdentifier folderId)
+  {
+    foreach(var anchor in _anchors.Values)
+    {
+      if(folderId.SameAs(anchor.Info.AnchorFolder))
+      {
+        yield return anchor;
+      }
+    }
+  }
+
+  /// <summary>
+  /// Return a list of anchors that point to the same physical folder
+  /// on disk as the argument.
+  /// </summary>
+  public IEnumerable<Anchor> FindSameFolderAnchors(
+    string folder)
+  {
+    var folderId = FileIdentifier.FromPath(folder);
+    if(folderId == null) // folder does not exist or is inaccessible
+    {
+      yield break;
+    }
+    foreach(var anchor in _anchors.Values)
+    {
+      if(folderId.SameAs(anchor.Info.AnchorFolder))
+      {
+        yield return anchor;
+      }
+    }
+  }
+
 }

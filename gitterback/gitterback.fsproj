@@ -21,6 +21,7 @@
     <Compile Include="CmdAnchorCreate.fs" />
     <Compile Include="CmdSetup.fs" />
     <Compile Include="CmdDev.fs" />
+    <Compile Include="CmdInfo.fs" />
     <Compile Include="Program.fs" />
     <None Include="README.md" />
   </ItemGroup>

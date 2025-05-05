@@ -27,6 +27,10 @@ let usage focus =
     cp "   This command will also register anew remote named \fc<remote>\f0 in"
     cp "   your GIT repo pointing to the bare repository, unless that remote already exists."
     cp "   \fc<remote>\f0 defaults to \fc<anchor>\f0."
+  if focus = "" || focus = "info" then
+    cp ""
+    cp "\fogitterback \fyinfo\f0"
+    cp "   Show information about the gitterback status of the current GIT repo"
   if focus = "" then
     cp ""
     cp "\fg-v               \f0Verbose mode"

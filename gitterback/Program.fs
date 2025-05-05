@@ -32,6 +32,9 @@ let rec run arglist =
     rest |> CmdSetup.run
   | "devtest" :: rest ->
     rest |> CmdDev.run
+  | "info" :: rest
+  | "status" :: rest ->
+    rest |> CmdInfo.run
   | x :: _ ->
     cp $"\foUnknown command\f0: \fy{x}\f0."
     1
