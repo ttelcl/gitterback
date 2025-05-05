@@ -28,5 +28,5 @@ let run args =
       cp "\foGitterback has not been set up for this repository\f0."
     for mapping in mappings do
       cpx $"\fb{mapping.Mode,6}\f0: remote=\fy{mapping.RemoteName}\f0"
-      cp " anchor=\fg{mapping.AnchorName}\f0 (\fc{mapping.TargetFolder}\f0)."
+      cp $" anchor=\fg{mapping.AnchorName}\f0 (\fc{mapping.TargetFolder}\f0)."
     0
